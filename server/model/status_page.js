@@ -570,8 +570,39 @@ class StatusPage extends BeanModel {
 
             for (const maintenanceID of maintenanceIDList) {
                 let maintenance = UptimeKumaServer.getInstance().getMaintenance(maintenanceID);
-                if (maintenance && (await maintenance.isUnderMaintenance())) {
+                if (!maintenance) {
+                    continue;
+                }
+                if (await maintenance.isUnderMaintenance()) {
                     publicMaintenanceList.push(await maintenance.toPublicJSON());
+                }
+                if ((await maintenance.getStatus()) === "scheduled") {
+                    let startDate;
+
+                    if (maintenance.strategy === "single") {
+                        startDate = maintenance.start_date;
+                    } else {
+                        if (!maintenance.beanMeta.job) {
+                            continue;
+                        }
+
+                        let nextRunDate = maintenance.beanMeta.job.nextRun();
+                        if (nextRunDate) {
+                            let startDateDayjs = dayjs(nextRunDate);
+
+                            startDate = startDateDayjs.toISOString();
+                        }
+
+                        if (!startDate) {
+                            continue;
+                        }
+                    }
+
+                    let current = dayjs();
+
+                    if (dayjs(startDate).diff(current, "day", true) <= 3) {
+                        publicMaintenanceList.push(await maintenance.toPublicJSON());
+                    }
                 }
             }
 
