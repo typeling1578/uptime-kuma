@@ -315,11 +315,11 @@ class Database {
 
         // Set to utf8mb4 for MariaDB
         if (dbConfig.type.endsWith("mariadb")) {
-            config.pool = {
+            config.pool = Object.assign({}, config.pool, {
                 afterCreate(conn, done) {
                     conn.query("SET CHARACTER SET utf8mb4;", (err) => done(err, conn));
                 },
-            };
+            });
         }
 
         const knexInstance = knex(config);
