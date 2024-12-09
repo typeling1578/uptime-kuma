@@ -241,7 +241,7 @@ class Database {
 
         let mariadbPoolConfig = {
             min: 0,
-            max: 10,
+            max: 3,
             idleTimeoutMillis: 30000,
         };
 
