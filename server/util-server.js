@@ -37,6 +37,8 @@ const dayjs = require("dayjs");
 const { Kafka, SASLOptions } = require("kafkajs");
 const crypto = require("crypto");
 
+let mySqlPool;
+
 const isWindows = process.platform === /^win/.test(process.platform);
 /**
  * Init or reset JWT secret
@@ -446,17 +448,18 @@ exports.postgresQuery = function (connectionString, query) {
  * @returns {Promise<(string)>} Response from server
  */
 exports.mysqlQuery = function (connectionString, query, password = undefined) {
-    return new Promise((resolve, reject) => {
-        const connection = mysql.createConnection({
+    if (!mySqlPool) {
+        mySqlPool = mysql.createPool({
             uri: connectionString,
-            password
+            password,
+            waitForConnections: true,
+            connectionLimit: 1,
+            queueLimit: 0
         });
+    }
 
-        connection.on("error", (err) => {
-            reject(err);
-        });
-
-        connection.query(query, (err, res) => {
+    return new Promise((resolve, reject) => {
+        mySqlPool.query(query, (err, res) => {
             if (err) {
                 reject(err);
             } else {
@@ -465,12 +468,6 @@ exports.mysqlQuery = function (connectionString, query, password = undefined) {
                 } else {
                     resolve("No Error, but the result is not an array. Type: " + typeof res);
                 }
-            }
-
-            try {
-                connection.end();
-            } catch (_) {
-                connection.destroy();
             }
         });
     });
