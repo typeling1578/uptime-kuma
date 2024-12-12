@@ -169,13 +169,24 @@ class Database {
     static readDBConfig() {
         let dbConfig;
 
-        let dbConfigString;
-        if (process.env.DB_CONFIG_FILE_PATH) {
-            dbConfigString = fs.readFileSync(process.env.DB_CONFIG_FILE_PATH).toString("utf-8");
+        if (process.env.KUMA_DB_USE_ENV == "1") {
+            dbConfig = {
+                type: process.env.KUMA_DB_TYPE,
+                port: process.env.KUMA_DB_PORT,
+                hostname: process.env.KUMA_DB_HOSTNAME,
+                username: process.env.KUMA_DB_USERNAME,
+                password: process.env.KUMA_DB_PASSWORD,
+                dbName: process.env.KUMA_DB_NAME,
+            };
         } else {
-            dbConfigString = fs.readFileSync(path.join(Database.dataDir, "db-config.json")).toString("utf-8");
+            let dbConfigString;
+            if (process.env.DB_CONFIG_FILE_PATH) {
+                dbConfigString = fs.readFileSync(process.env.DB_CONFIG_FILE_PATH).toString("utf-8");
+            } else {
+                dbConfigString = fs.readFileSync(path.join(Database.dataDir, "db-config.json")).toString("utf-8");
+            }
+            dbConfig = JSON.parse(dbConfigString);
         }
-        dbConfig = JSON.parse(dbConfigString);
 
         if (typeof dbConfig !== "object") {
             throw new Error("Invalid db-config.json, it must be an object");
